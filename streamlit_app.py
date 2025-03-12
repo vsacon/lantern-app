@@ -65,29 +65,24 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": f"🔍 View {author_key}"
+                        "View Details": f"Click to View {author_key}"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
-
-                # Display the table
-                selected_author_id = st.data_editor(
-                    df,
-                    column_config={
-                        "Author ID": st.column_config.TextColumn("Author ID", width="small"),
-                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
-                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
-                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small"),
-                        "View Details": st.column_config.TextColumn("View Details", width="small")
-                    },
-                    use_container_width=True,
-                    hide_index=True,
-                    key="author_table"
-                )
                 
-                # Retrieve details when a user selects an author
-                selected_author_id = st.selectbox("Select an Author to View Details", [""] + list(df["Author ID"]))
+                # Display the table with clickable links
+                def make_clickable(author_id):
+                    return f'<a href="?selected_author={author_id}" target="_self">🔍 View Details</a>'
+                
+                df["View Details"] = df["Author ID"].apply(make_clickable)
+                
+                st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
+                
+                # Retrieve details based on query parameter
+                query_params = st.experimental_get_query_params()
+                selected_author_id = query_params.get("selected_author", [None])[0]
+                
                 if selected_author_id:
                     author_details = get_author_details(selected_author_id)
                     if author_details:
