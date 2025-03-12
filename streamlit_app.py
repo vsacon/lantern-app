@@ -114,14 +114,14 @@ if author_name:
                     st.session_state.clicked_author = None
                 
                 # Display the table with clickable Author IDs
-                clicked = st.dataframe(
+                selected_rows = st.data_editor(
                     df,
                     hide_index=True,
                     column_config={
-                        "Author ID": st.column_config.TextColumn(
+                        "Author ID": st.column_config.LinkColumn(
                             "Author ID",
                             width="small",
-                            help="Click on ID to view details"
+                            help="Click to view details"
                         ),
                         "Author Name": st.column_config.TextColumn(
                             "Author Name",
@@ -138,11 +138,10 @@ if author_name:
                     }
                 )
                 
-                # Handle clicks on Author IDs
-                for idx, row in df.iterrows():
-                    author_key = row['Author ID']
-                    if st.button(f"View {author_key}", key=f"btn_{author_key}"):
-                        show_author_details(author_key)
+                # If a row is selected, show the author details
+                if selected_rows is not None and len(selected_rows) > 0:
+                    selected_author_key = selected_rows.iloc[0]["Author ID"]
+                    show_author_details(selected_author_key)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
