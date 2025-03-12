@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import json
 import pandas as pd
+from st_clickable_text import clickable_text
 
 # Set page config
 st.set_page_config(
@@ -23,6 +24,11 @@ st.markdown("""
         padding: 1.5rem;
         border-radius: 10px;
         margin: 1rem 0;
+    }
+    .clickable {
+        color: #1E88E5;
+        text-decoration: underline;
+        cursor: pointer;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -94,18 +100,14 @@ if author_name:
                 # Create a list to store the table data
                 table_data = []
                 
-                # Store author keys for lookup
-                author_keys = {}
-                
                 # Collect data for each author
                 for author in data["docs"]:
                     # Extract author key from the full key (e.g., "/authors/OL23919A" -> "OL23919A")
                     author_key = author["key"].split("/")[-1]
-                    author_name = author["name"]
-                    author_keys[author_name] = author_key
                     
                     table_data.append({
-                        "Author Name": author_name,
+                        "Author ID": author_key,
+                        "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A")
                     })
@@ -113,11 +115,20 @@ if author_name:
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Display the table
-                st.dataframe(
+                # Create session state for clicked author
+                if 'clicked_author' not in st.session_state:
+                    st.session_state.clicked_author = None
+                
+                # Display the table with clickable Author IDs
+                clicked = st.dataframe(
                     df,
                     hide_index=True,
                     column_config={
+                        "Author ID": st.column_config.TextColumn(
+                            "Author ID",
+                            width="small",
+                            help="Click on ID to view details"
+                        ),
                         "Author Name": st.column_config.TextColumn(
                             "Author Name",
                             width="medium"
@@ -133,11 +144,11 @@ if author_name:
                     }
                 )
                 
-                # Add clickable author names below the table
-                st.write("Click on an author's name to view more details:")
-                for author_name in author_keys:
-                    if st.button(author_name):
-                        show_author_details(author_keys[author_name])
+                # Handle clicks on Author IDs
+                for idx, row in df.iterrows():
+                    author_key = row['Author ID']
+                    if st.button(f"View {author_key}", key=f"btn_{author_key}"):
+                        show_author_details(author_key)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
@@ -147,10 +158,3 @@ if author_name:
         except requests.exceptions.RequestException as e:
             st.error(f"An error occurred while searching for authors: {str(e)}")
             st.info("Please check your internet connection and try again.")
-
-# Add footer
-st.markdown("""
-    <div style='margin-top: 3rem; text-align: center; color: #666;'>
-        <p>Powered by Open Library API</p>
-    </div>
-""", unsafe_allow_html=True)
