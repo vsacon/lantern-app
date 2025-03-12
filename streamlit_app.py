@@ -24,11 +24,6 @@ st.markdown("""
         border-radius: 10px;
         margin: 1rem 0;
     }
-    .clickable {
-        color: #1E88E5;
-        text-decoration: underline;
-        cursor: pointer;
-    }
     </style>
 """, unsafe_allow_html=True)
 
