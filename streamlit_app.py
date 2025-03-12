@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import pandas as pd
 
 # Set page config
 st.set_page_config(
@@ -30,8 +31,7 @@ st.markdown("""
 st.title("📚 Author Search")
 st.markdown("""
     <p style='font-size: 1.2rem; color: #666;'>
-        Discover authors and their works using the Open Library database.
-        Enter an author's name below to begin your search.
+        Search for authors in the Open Library database
     </p>
 """, unsafe_allow_html=True)
 
@@ -47,44 +47,35 @@ if author_name:
         try:
             # Make the API request
             response = requests.get(search_url)
-            response.raise_for_status()  # Raise an exception for bad status codes
+            response.raise_for_status()
             data = response.json()
             
             # Check if any authors were found
             if data["numFound"] > 0:
-                st.success(f"Found {data['numFound']} author(s) matching your search!")
+                # Create a list to store the table data
+                table_data = []
                 
-                # Display each author's information
+                # Collect data for each author
                 for author in data["docs"]:
-                    with st.container():
-                        st.markdown("""
-                            <div class="author-card">
-                        """, unsafe_allow_html=True)
-                        
-                        # Author name with larger font
-                        st.markdown(f"### {author['name']}")
-                        
-                        # Create two columns for better organization
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            if "birth_date" in author:
-                                st.markdown(f"**Birth Date:** {author['birth_date']}")
-                            if "top_work" in author:
-                                st.markdown(f"**Most Popular Work:** {author['top_work']}")
-                            if "work_count" in author:
-                                st.markdown(f"**Number of Works:** {author['work_count']}")
-                        
-                        with col2:
-                            if "alternate_names" in author and author["alternate_names"]:
-                                st.markdown("**Also known as:**")
-                                st.markdown("- " + "\n- ".join(author["alternate_names"]))
-                            
-                            if "top_subjects" in author and author["top_subjects"]:
-                                st.markdown("**Top Subjects:**")
-                                st.markdown("- " + "\n- ".join(author["top_subjects"][:5]))  # Limit to top 5 subjects
-                        
-                        st.markdown("</div>", unsafe_allow_html=True)
+                    table_data.append({
+                        "Author Name": author["name"],
+                        "Most Popular Work": author.get("top_work", "N/A"),
+                        "Number of Works": author.get("work_count", "N/A")
+                    })
+                
+                # Create a DataFrame and display it as a table
+                df = pd.DataFrame(table_data)
+                st.dataframe(
+                    df,
+                    hide_index=True,
+                    column_config={
+                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
+                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
+                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small")
+                    }
+                )
+                
+                st.caption(f"Found {data['numFound']} author(s)")
             
             else:
                 st.warning("No authors found matching your search. Please try a different name.")
