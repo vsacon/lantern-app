@@ -65,7 +65,7 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Author Details": f"https://openlibrary.org/authors/{author_key}.json"
+                        "View Author Details": f"https://openlibrary.org/authors/{author_key}"
                     })
                 
                 # Create a DataFrame
@@ -95,7 +95,7 @@ if author_name:
                         "View Author Details": st.column_config.LinkColumn(
                             "View Author Details",
                             width="small",
-                            help="Click to view author details in JSON format"
+                            help="Click to view author details on Open Library"
                         )
                     }
                 )
