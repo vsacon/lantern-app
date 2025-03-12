@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import json
 import pandas as pd
-from st_clickable_text import clickable_text
 
 # Set page config
 st.set_page_config(
