@@ -38,45 +38,6 @@ st.markdown("""
 # Create a text input for author search
 author_name = st.text_input("Enter author name:", placeholder="e.g., J.K. Rowling, Stephen King")
 
-# Function to display author details
-def show_author_details(author_key):
-    try:
-        # Get detailed author information
-        author_url = f"https://openlibrary.org/authors/{author_key}.json"
-        response = requests.get(author_url)
-        response.raise_for_status()
-        author_data = response.json()
-        
-        # Display author details in an expander
-        with st.expander(f"Details for {author_data.get('name', 'Unknown Author')}"):
-            # Basic Information
-            if 'birth_date' in author_data:
-                st.write(f"**Birth Date:** {author_data['birth_date']}")
-            if 'death_date' in author_data:
-                st.write(f"**Death Date:** {author_data['death_date']}")
-                
-            # Bio
-            if 'bio' in author_data:
-                bio_text = author_data['bio']
-                if isinstance(bio_text, dict) and 'value' in bio_text:
-                    bio_text = bio_text['value']
-                st.write("**Biography:**")
-                st.write(bio_text)
-                
-            # Personal URLs
-            if 'links' in author_data and author_data['links']:
-                st.write("**External Links:**")
-                for link in author_data['links']:
-                    if 'url' in link and 'title' in link:
-                        st.markdown(f"- [{link['title']}]({link['url']})")
-            
-            # Wikipedia URL
-            if 'wikipedia' in author_data:
-                st.markdown(f"[View on Wikipedia]({author_data['wikipedia']})")
-            
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching author details: {str(e)}")
-
 # Search for authors when there's input
 if author_name:
     with st.spinner('Searching for authors...'):
@@ -103,15 +64,12 @@ if author_name:
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
-                        "Number of Works": author.get("work_count", "N/A")
+                        "Number of Works": author.get("work_count", "N/A"),
+                        "View Author Details": f"https://openlibrary.org/authors/{author_key}.json"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
-                
-                # Create session state for clicked author
-                if 'clicked_author' not in st.session_state:
-                    st.session_state.clicked_author = None
 
                 # Display the table
                 st.dataframe(
@@ -133,20 +91,14 @@ if author_name:
                         "Number of Works": st.column_config.NumberColumn(
                             "Number of Works",
                             width="small"
+                        ),
+                        "View Author Details": st.column_config.LinkColumn(
+                            "View Author Details",
+                            width="small",
+                            help="Click to view author details in JSON format"
                         )
                     }
                 )
-
-                # Create buttons for each author
-                cols = st.columns(4)  # Create 4 columns for better button layout
-                for idx, row in df.iterrows():
-                    with cols[idx % 4]:
-                        if st.button(f"View Details: {row['Author Name']}", key=f"btn_{row['Author ID']}"):
-                            st.session_state.clicked_author = row['Author ID']
-
-                # Show author details if an author is selected
-                if st.session_state.clicked_author:
-                    show_author_details(st.session_state.clicked_author)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
