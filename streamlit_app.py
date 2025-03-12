@@ -112,16 +112,15 @@ if author_name:
                 # Create session state for clicked author
                 if 'clicked_author' not in st.session_state:
                     st.session_state.clicked_author = None
-                
-                # Display the table with clickable Author IDs
-                edited_df = st.data_editor(
+
+                # Display the table
+                st.dataframe(
                     df,
                     hide_index=True,
                     column_config={
-                        "Author ID": st.column_config.LinkColumn(
+                        "Author ID": st.column_config.TextColumn(
                             "Author ID",
-                            width="small",
-                            help="Click to view details"
+                            width="small"
                         ),
                         "Author Name": st.column_config.TextColumn(
                             "Author Name",
@@ -138,12 +137,16 @@ if author_name:
                     }
                 )
 
-                # Check if any row was selected
-                if edited_df is not None and not edited_df.equals(df):
-                    # Find the changed row
-                    changed_row = edited_df[~edited_df.equals(df)].index[0]
-                    selected_author_key = df.iloc[changed_row]["Author ID"]
-                    show_author_details(selected_author_key)
+                # Create buttons for each author
+                cols = st.columns(4)  # Create 4 columns for better button layout
+                for idx, row in df.iterrows():
+                    with cols[idx % 4]:
+                        if st.button(f"View Details: {row['Author Name']}", key=f"btn_{row['Author ID']}"):
+                            st.session_state.clicked_author = row['Author ID']
+
+                # Show author details if an author is selected
+                if st.session_state.clicked_author:
+                    show_author_details(st.session_state.clicked_author)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
