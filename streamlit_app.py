@@ -64,23 +64,29 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": f"[View Details](/?selected_author={author_key})"
+                        "View Details": "View Details"  # Simple button text
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Create two separate columns - one for the main data and one for the action buttons
-                col1, col2 = st.columns([4, 1])
-                
-                # Display the main data columns
-                display_df = df[['Author Name', 'Most Popular Work', 'Number of Works']]
-                col1.dataframe(display_df, hide_index=True)
-                
-                # Display buttons for each author
-                for idx, row in df.iterrows():
-                    if col2.button('View Details', key=f"btn_{row['Author ID']}"):
-                        st.query_params['selected_author'] = row['Author ID']
+                # Display the interactive table
+                selected_row = st.data_editor(
+                    df,
+                    column_config={
+                        "Author ID": None,  # Hide this column
+                        "View Details": st.column_config.ButtonColumn(
+                            "View Details",
+                            help="Click to view author details"
+                        )
+                    },
+                    hide_index=True,
+                )
+
+                # Check if a button was clicked
+                if "View Details" in selected_row.values and any(selected_row["View Details"]):
+                    clicked_row = df[df["View Details"] == selected_row["View Details"].iloc[0]].iloc[0]
+                    st.query_params["selected_author"] = clicked_row["Author ID"]
                 
                 # Retrieve details if an author was selected
                 query_params = st.query_params
