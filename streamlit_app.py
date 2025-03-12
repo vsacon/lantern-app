@@ -28,14 +28,6 @@ st.markdown("""
     </p>
 """, unsafe_allow_html=True)
 
-# Function to fetch author details
-def get_author_details(author_id):
-    url = f"https://openlibrary.org/authors/{author_id}.json"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    return None
-
 # Create a text input for author search
 author_name = st.text_input("Enter author name:", placeholder="e.g., J.K. Rowling, Stephen King")
 
@@ -58,51 +50,15 @@ if author_name:
                 
                 # Collect data for each author
                 for author in data["docs"]:
-                    author_key = author["key"].split("/")[-1]
                     table_data.append({
-                        "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
-                        "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": "View Details"  # Simple button text
+                        "Number of Works": author.get("work_count", "N/A")
                     })
                 
-                # Create a DataFrame
+                # Create and display DataFrame
                 df = pd.DataFrame(table_data)
-                
-                # Display the interactive table
-                selected_row = st.data_editor(
-                    df,
-                    column_config={
-                        "Author ID": None,  # Hide this column
-                        "View Details": st.column_config.ButtonColumn(
-                            "View Details",
-                            help="Click to view author details"
-                        )
-                    },
-                    hide_index=True,
-                )
-
-                # Check if a button was clicked
-                if "View Details" in selected_row.values and any(selected_row["View Details"]):
-                    clicked_row = df[df["View Details"] == selected_row["View Details"].iloc[0]].iloc[0]
-                    st.query_params["selected_author"] = clicked_row["Author ID"]
-                
-                # Retrieve details if an author was selected
-                query_params = st.query_params
-                selected_author_id = query_params.get("selected_author", [None])[0]
-                
-                if selected_author_id:
-                    author_details = get_author_details(selected_author_id)
-                    if author_details:
-                        st.subheader(f"Details for {author_details.get('name', 'Unknown Author')}")
-                        st.markdown(f"**Birth Date:** {author_details.get('birth_date', 'N/A')}")
-                        st.markdown(f"**Death Date:** {author_details.get('death_date', 'N/A')}")
-                        st.markdown(f"**Top Work:** {author_details.get('top_work', 'N/A')}")
-                        st.markdown(f"**Work Count:** {author_details.get('work_count', 'N/A')}")
-                        st.markdown(f"**Bio:** {author_details.get('bio', 'N/A')}")
-                    else:
-                        st.warning("Could not retrieve author details.")
+                st.dataframe(df, hide_index=True)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
