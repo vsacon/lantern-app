@@ -121,8 +121,7 @@ if author_name:
                         "Author ID": st.column_config.LinkColumn(
                             "Author ID",
                             width="small",
-                            help="Click to view details",
-                            display_text="View Details"
+                            help="Click to view details"
                         ),
                         "Author Name": st.column_config.TextColumn(
                             "Author Name",
@@ -136,19 +135,14 @@ if author_name:
                             "Number of Works",
                             width="small"
                         )
-                    },
-                    on_change=lambda: None,  # Prevent auto-selection behavior
-                    disabled=True  # Make the table read-only
+                    }
                 )
 
-                # Get the clicked cell value
-                clicked_cell = st.data_editor_value("clicked_cell")
-                
-                # Only show author details if an Author ID cell was clicked
-                if (clicked_cell is not None and 
-                    clicked_cell.get("column") == "Author ID" and 
-                    clicked_cell.get("row_index") is not None):
-                    selected_author_key = df.iloc[clicked_cell["row_index"]]["Author ID"]
+                # Check if any row was selected
+                if edited_df is not None and not edited_df.equals(df):
+                    # Find the changed row
+                    changed_row = edited_df[~edited_df.equals(df)].index[0]
+                    selected_author_key = df.iloc[changed_row]["Author ID"]
                     show_author_details(selected_author_key)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
