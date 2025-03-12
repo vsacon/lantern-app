@@ -120,46 +120,49 @@ if author_name:
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
-                        "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": False  # Checkbox column
+                        "Number of Works": author.get("work_count", "N/A")
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
 
-                # Create columns to display table and buttons side by side
-                col1, col2 = st.columns([4, 1])
-                
-                with col1:
-                    # Display the table
-                    st.dataframe(
-                        df,
-                        hide_index=True,
-                        column_config={
-                            "Author ID": st.column_config.TextColumn(
-                                "Author ID",
-                                width="small"
-                            ),
-                            "Author Name": st.column_config.TextColumn(
-                                "Author Name",
-                                width="medium"
-                            ),
-                            "Most Popular Work": st.column_config.TextColumn(
-                                "Most Popular Work",
-                                width="medium"
-                            ),
-                            "Number of Works": st.column_config.NumberColumn(
-                                "Number of Works",
-                                width="small"
-                            )
-                        }
-                    )
-                
-                with col2:
-                    st.write("Actions")
-                    for idx, row in df.iterrows():
-                        if st.button("📖", key=f"btn_{row['Author ID']}", help=f"View details for {row['Author Name']}"):
-                            display_author_details(row['Author ID'])
+                # Initialize session state for selected author
+                if 'selected_author' not in st.session_state:
+                    st.session_state.selected_author = None
+
+                # Display the table with selection
+                selection = st.data_editor(
+                    df,
+                    hide_index=True,
+                    disabled=df.columns.tolist(),  # Make all columns read-only
+                    column_config={
+                        "Author ID": st.column_config.TextColumn(
+                            "Author ID",
+                            width="small"
+                        ),
+                        "Author Name": st.column_config.TextColumn(
+                            "Author Name",
+                            width="medium"
+                        ),
+                        "Most Popular Work": st.column_config.TextColumn(
+                            "Most Popular Work",
+                            width="medium"
+                        ),
+                        "Number of Works": st.column_config.NumberColumn(
+                            "Number of Works",
+                            width="small"
+                        )
+                    }
+                )
+
+                # Handle row selection
+                if selection is not None:
+                    selected_indices = selection.index
+                    if len(selected_indices) > 0:
+                        selected_author = df.iloc[selected_indices[0]]["Author ID"]
+                        if selected_author != st.session_state.selected_author:
+                            st.session_state.selected_author = selected_author
+                            display_author_details(selected_author)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
