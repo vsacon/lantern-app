@@ -65,21 +65,23 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": f"View {author_key}"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Display the table using st.dataframe
-                st.dataframe(df, hide_index=True, use_container_width=True)
+                # Add a 'View Details' button inside the table
+                def add_buttons(df):
+                    buttons = []
+                    for author_id in df["Author ID"]:
+                        if st.button(f"View Details {author_id}", key=f"btn_{author_id}"):
+                            st.session_state["selected_author"] = author_id
+                    return buttons
                 
-                # Ensure unique keys for buttons
-                selected_author_id = None
-                for _, row in df.iterrows():
-                    if st.button(f"View Details - {row['Author ID']}", key=f"view_{row['Author ID']}"):
-                        selected_author_id = row["Author ID"]
-                        st.session_state["selected_author"] = selected_author_id
+                df["View Details"] = df["Author ID"].apply(lambda x: add_buttons(df))
+                
+                # Display the table
+                st.dataframe(df, hide_index=True, use_container_width=True)
                 
                 # Retrieve details if an author was selected
                 if "selected_author" in st.session_state:
