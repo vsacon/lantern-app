@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for table styling
+# Custom CSS
 st.markdown("""
     <style>
     .stTitle {
@@ -60,27 +60,29 @@ if author_name:
                 for author in data["docs"]:
                     author_key = author["key"].split("/")[-1]
                     
-                    # Create a clickable link button
-                    view_details_link = f"[🔍 View Details](?selected_author={author_key})"
-                    
                     table_data.append({
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": view_details_link
+                        "View Details": f"Click to View {author_key}"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Display the table with clickable buttons inside it
+                # Display the table with clickable links
+                def make_clickable(author_id):
+                    return f'<a href="?selected_author={author_id}" target="_self">🔍 View Details</a>'
+                
+                df["View Details"] = df["Author ID"].apply(make_clickable)
+                
                 st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
                 
-                # Detect selected author from URL query parameters
-                selected_author_id = st.query_params.get("selected_author", [None])[0]
-
-                # Retrieve details if an author was selected
+                # Retrieve details based on query parameter
+                query_params = st.experimental_get_query_params()
+                selected_author_id = query_params.get("selected_author", [None])[0]
+                
                 if selected_author_id:
                     author_details = get_author_details(selected_author_id)
                     if author_details:
