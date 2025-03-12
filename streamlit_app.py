@@ -70,11 +70,17 @@ if author_name:
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Convert the View Details column to clickable markdown links
-                df['View Details'] = df.apply(lambda x: f"[View Details](/?selected_author={x['Author ID']})", axis=1)
+                # Create two separate columns - one for the main data and one for the action buttons
+                col1, col2 = st.columns([4, 1])
                 
-                # Display the table using Streamlit's native display
-                st.write(df.to_markdown(index=False), unsafe_allow_html=True)
+                # Display the main data columns
+                display_df = df[['Author Name', 'Most Popular Work', 'Number of Works']]
+                col1.dataframe(display_df, hide_index=True)
+                
+                # Display buttons for each author
+                for idx, row in df.iterrows():
+                    if col2.button('View Details', key=f"btn_{row['Author ID']}"):
+                        st.query_params['selected_author'] = row['Author ID']
                 
                 # Retrieve details if an author was selected
                 query_params = st.query_params
