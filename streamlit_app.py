@@ -38,6 +38,45 @@ st.markdown("""
 # Create a text input for author search
 author_name = st.text_input("Enter author name:", placeholder="e.g., J.K. Rowling, Stephen King")
 
+# Function to display author details
+def show_author_details(author_key):
+    try:
+        # Get detailed author information
+        author_url = f"https://openlibrary.org/authors/{author_key}.json"
+        response = requests.get(author_url)
+        response.raise_for_status()
+        author_data = response.json()
+        
+        # Display author details in an expander
+        with st.expander(f"Details for {author_data.get('name', 'Unknown Author')}"):
+            # Basic Information
+            if 'birth_date' in author_data:
+                st.write(f"**Birth Date:** {author_data['birth_date']}")
+            if 'death_date' in author_data:
+                st.write(f"**Death Date:** {author_data['death_date']}")
+                
+            # Bio
+            if 'bio' in author_data:
+                bio_text = author_data['bio']
+                if isinstance(bio_text, dict) and 'value' in bio_text:
+                    bio_text = bio_text['value']
+                st.write("**Biography:**")
+                st.write(bio_text)
+                
+            # Personal URLs
+            if 'links' in author_data and author_data['links']:
+                st.write("**External Links:**")
+                for link in author_data['links']:
+                    if 'url' in link and 'title' in link:
+                        st.markdown(f"- [{link['title']}]({link['url']})")
+            
+            # Wikipedia URL
+            if 'wikipedia' in author_data:
+                st.markdown(f"[View on Wikipedia]({author_data['wikipedia']})")
+            
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching author details: {str(e)}")
+
 # Search for authors when there's input
 if author_name:
     with st.spinner('Searching for authors...'):
@@ -55,25 +94,50 @@ if author_name:
                 # Create a list to store the table data
                 table_data = []
                 
+                # Store author keys for lookup
+                author_keys = {}
+                
                 # Collect data for each author
                 for author in data["docs"]:
+                    # Extract author key from the full key (e.g., "/authors/OL23919A" -> "OL23919A")
+                    author_key = author["key"].split("/")[-1]
+                    author_name = author["name"]
+                    author_keys[author_name] = author_key
+                    
                     table_data.append({
-                        "Author Name": author["name"],
+                        "Author Name": author_name,
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A")
                     })
                 
-                # Create a DataFrame and display it as a table
+                # Create a DataFrame
                 df = pd.DataFrame(table_data)
+                
+                # Display the table
                 st.dataframe(
                     df,
                     hide_index=True,
                     column_config={
-                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
-                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
-                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small")
+                        "Author Name": st.column_config.TextColumn(
+                            "Author Name",
+                            width="medium"
+                        ),
+                        "Most Popular Work": st.column_config.TextColumn(
+                            "Most Popular Work",
+                            width="medium"
+                        ),
+                        "Number of Works": st.column_config.NumberColumn(
+                            "Number of Works",
+                            width="small"
+                        )
                     }
                 )
+                
+                # Add clickable author names below the table
+                st.write("Click on an author's name to view more details:")
+                for author_name in author_keys:
+                    if st.button(author_name):
+                        show_author_details(author_keys[author_name])
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
