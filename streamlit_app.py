@@ -18,16 +18,11 @@ st.markdown("""
         font-size: 3rem !important;
         padding-bottom: 2rem;
     }
-    .author-details {
+    .author-card {
         background-color: #f8f9fa;
         padding: 1.5rem;
         border-radius: 10px;
-        margin: 0.5rem 0;
-        border-left: 4px solid #1E3D59;
-    }
-    .author-bio {
-        margin-top: 1rem;
-        line-height: 1.6;
+        margin: 1rem 0;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -43,94 +38,113 @@ st.markdown("""
 # Create a text input for author search
 author_name = st.text_input("Enter author name:", placeholder="e.g., J.K. Rowling, Stephen King")
 
-# Function to get author details
-def get_author_details(author_key):
+# Function to display author details
+def show_author_details(author_key):
     try:
+        # Get detailed author information
         author_url = f"https://openlibrary.org/authors/{author_key}.json"
         response = requests.get(author_url)
         response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException:
-        return None
+        author_data = response.json()
+        
+        # Display author details in an expander
+        with st.expander(f"Details for {author_data.get('name', 'Unknown Author')}"):
+            # Basic Information
+            if 'birth_date' in author_data:
+                st.write(f"**Birth Date:** {author_data['birth_date']}")
+            if 'death_date' in author_data:
+                st.write(f"**Death Date:** {author_data['death_date']}")
+                
+            # Bio
+            if 'bio' in author_data:
+                bio_text = author_data['bio']
+                if isinstance(bio_text, dict) and 'value' in bio_text:
+                    bio_text = bio_text['value']
+                st.write("**Biography:**")
+                st.write(bio_text)
+                
+            # Personal URLs
+            if 'links' in author_data and author_data['links']:
+                st.write("**External Links:**")
+                for link in author_data['links']:
+                    if 'url' in link and 'title' in link:
+                        st.markdown(f"- [{link['title']}]({link['url']})")
+            
+            # Wikipedia URL
+            if 'wikipedia' in author_data:
+                st.markdown(f"[View on Wikipedia]({author_data['wikipedia']})")
+            
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching author details: {str(e)}")
 
 # Search for authors when there's input
 if author_name:
     with st.spinner('Searching for authors...'):
+        # Create the search URL
+        search_url = f"https://openlibrary.org/search/authors.json?q={author_name}"
+        
         try:
-            # Create the search URL
-            search_url = f"https://openlibrary.org/search/authors.json?q={author_name}"
+            # Make the API request
             response = requests.get(search_url)
             response.raise_for_status()
             data = response.json()
             
             # Check if any authors were found
             if data["numFound"] > 0:
-                # Initialize session state for expanded rows if not exists
-                if 'expanded_rows' not in st.session_state:
-                    st.session_state.expanded_rows = set()
+                # Create a list to store the table data
+                table_data = []
                 
-                # Display authors
+                # Collect data for each author
                 for author in data["docs"]:
+                    # Extract author key from the full key (e.g., "/authors/OL23919A" -> "OL23919A")
                     author_key = author["key"].split("/")[-1]
-                    col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
                     
-                    with col1:
-                        st.write("**ID:**", author_key)
-                    with col2:
-                        st.write("**Name:**", author["name"])
-                    with col3:
-                        st.write("**Most Popular Work:**", author.get("top_work", "N/A"))
-                    with col4:
-                        st.write("**Works:**", author.get("work_count", "N/A"))
-                    
-                    # Add expand/collapse button
-                    if st.button("Show Details" if author_key not in st.session_state.expanded_rows else "Hide Details", 
-                               key=f"btn_{author_key}"):
-                        if author_key in st.session_state.expanded_rows:
-                            st.session_state.expanded_rows.remove(author_key)
-                        else:
-                            st.session_state.expanded_rows.add(author_key)
-                    
-                    # Show author details if expanded
-                    if author_key in st.session_state.expanded_rows:
-                        author_data = get_author_details(author_key)
-                        if author_data:
-                            st.markdown("<div class='author-details'>", unsafe_allow_html=True)
-                            
-                            # Basic Information
-                            if 'birth_date' in author_data:
-                                st.write(f"**Birth Date:** {author_data['birth_date']}")
-                            if 'death_date' in author_data:
-                                st.write(f"**Death Date:** {author_data['death_date']}")
-                            
-                            # Bio
-                            if 'bio' in author_data:
-                                bio_text = author_data['bio']
-                                if isinstance(bio_text, dict) and 'value' in bio_text:
-                                    bio_text = bio_text['value']
-                                st.markdown("<div class='author-bio'>", unsafe_allow_html=True)
-                                st.write("**Biography:**")
-                                st.write(bio_text)
-                                st.markdown("</div>", unsafe_allow_html=True)
-                            
-                            # External Links
-                            if 'links' in author_data and author_data['links']:
-                                st.write("**External Links:**")
-                                for link in author_data['links']:
-                                    if 'url' in link and 'title' in link:
-                                        st.markdown(f"- [{link['title']}]({link['url']})")
-                            
-                            # Wikipedia URL
-                            if 'wikipedia' in author_data:
-                                st.markdown(f"[View on Wikipedia]({author_data['wikipedia']})")
-                            
-                            st.markdown("</div>", unsafe_allow_html=True)
-                        else:
-                            st.error("Could not fetch author details")
-                    
-                    st.markdown("---")
+                    table_data.append({
+                        "Author ID": author_key,
+                        "Author Name": author["name"],
+                        "Most Popular Work": author.get("top_work", "N/A"),
+                        "Number of Works": author.get("work_count", "N/A")
+                    })
+                
+                # Create a DataFrame
+                df = pd.DataFrame(table_data)
+                
+                # Create session state for clicked author
+                if 'clicked_author' not in st.session_state:
+                    st.session_state.clicked_author = None
+                
+                # Display the table with clickable Author IDs
+                selected_rows = st.data_editor(
+                    df,
+                    hide_index=True,
+                    column_config={
+                        "Author ID": st.column_config.LinkColumn(
+                            "Author ID",
+                            width="small",
+                            help="Click to view details"
+                        ),
+                        "Author Name": st.column_config.TextColumn(
+                            "Author Name",
+                            width="medium"
+                        ),
+                        "Most Popular Work": st.column_config.TextColumn(
+                            "Most Popular Work",
+                            width="medium"
+                        ),
+                        "Number of Works": st.column_config.NumberColumn(
+                            "Number of Works",
+                            width="small"
+                        )
+                    }
+                )
+                
+                # If a row is selected, show the author details
+                if selected_rows is not None and len(selected_rows) > 0:
+                    selected_author_key = selected_rows.iloc[0]["Author ID"]
+                    show_author_details(selected_author_key)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
+            
             else:
                 st.warning("No authors found matching your search. Please try a different name.")
                 
