@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import json
 import pandas as pd
 
 # Set page config
@@ -16,6 +17,12 @@ st.markdown("""
         color: #1E3D59;
         font-size: 3rem !important;
         padding-bottom: 2rem;
+    }
+    .author-card {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin: 1rem 0;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -56,9 +63,17 @@ if author_name:
                         "Number of Works": author.get("work_count", "N/A")
                     })
                 
-                # Create and display DataFrame
+                # Create a DataFrame and display it as a table
                 df = pd.DataFrame(table_data)
-                st.dataframe(df, hide_index=True)
+                st.dataframe(
+                    df,
+                    hide_index=True,
+                    column_config={
+                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
+                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
+                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small")
+                    }
+                )
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
@@ -68,3 +83,10 @@ if author_name:
         except requests.exceptions.RequestException as e:
             st.error(f"An error occurred while searching for authors: {str(e)}")
             st.info("Please check your internet connection and try again.")
+
+# Add footer
+st.markdown("""
+    <div style='margin-top: 3rem; text-align: center; color: #666;'>
+        <p>Powered by Open Library API</p>
+    </div>
+""", unsafe_allow_html=True)
