@@ -152,7 +152,7 @@ if author_name:
                             "Number of Works",
                             width="small"
                         ),
-                        "Details": st.column_config.ButtonColumn(
+                        "Details": st.column_config.LinkColumn(
                             "Details",
                             help="Click to view author details",
                             width="small"
