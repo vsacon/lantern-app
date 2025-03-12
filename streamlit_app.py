@@ -57,30 +57,37 @@ if author_name:
                 table_data = []
                 
                 # Collect data for each author
-                for index, author in enumerate(data["docs"]):
-                    # Extract author key from the full key (e.g., "/authors/OL23919A" -> "OL23919A")
+                for author in data["docs"]:
                     author_key = author["key"].split("/")[-1]
                     
                     table_data.append({
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
-                        "Number of Works": author.get("work_count", "N/A")
+                        "Number of Works": author.get("work_count", "N/A"),
+                        "View Details": f"🔍 View {author_key}"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
 
                 # Display the table
-                st.dataframe(df, hide_index=True, use_container_width=True)
+                selected_author_id = st.data_editor(
+                    df,
+                    column_config={
+                        "Author ID": st.column_config.TextColumn("Author ID", width="small"),
+                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
+                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
+                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small"),
+                        "View Details": st.column_config.TextColumn("View Details", width="small")
+                    },
+                    use_container_width=True,
+                    hide_index=True,
+                    key="author_table"
+                )
                 
-                # Ensure unique keys for buttons
-                selected_author_id = None
-                for index, row in df.iterrows():
-                    if st.button(f"View Details - {row['Author ID']}", key=f"view_{row['Author ID']}"):
-                        selected_author_id = row["Author ID"]
-                
-                # Show details when an author is selected
+                # Retrieve details when a user selects an author
+                selected_author_id = st.selectbox("Select an Author to View Details", [""] + list(df["Author ID"]))
                 if selected_author_id:
                     author_details = get_author_details(selected_author_id)
                     if author_details:
