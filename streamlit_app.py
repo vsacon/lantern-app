@@ -120,14 +120,19 @@ if author_name:
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
-                        "Number of Works": author.get("work_count", "N/A")
+                        "Number of Works": author.get("work_count", "N/A"),
+                        "Details": "View Details"  # Text for the button
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
 
-                # Display the table with selectable rows
-                selected_indices = st.data_editor(
+                # Initialize session state for storing the selected author
+                if 'selected_author' not in st.session_state:
+                    st.session_state.selected_author = None
+
+                # Display the table
+                edited_df = st.data_editor(
                     df,
                     hide_index=True,
                     column_config={
@@ -146,16 +151,26 @@ if author_name:
                         "Number of Works": st.column_config.NumberColumn(
                             "Number of Works",
                             width="small"
+                        ),
+                        "Details": st.column_config.ButtonColumn(
+                            "Details",
+                            help="Click to view author details",
+                            width="small"
                         )
-                    },
-                    key="author_table",
-                    on_change=lambda: None
+                    }
                 )
 
-                # Show details for selected row
-                if selected_indices is not None and len(selected_indices) > 0:
-                    selected_row = df.iloc[selected_indices.index[0]]
-                    display_author_details(selected_row["Author ID"])
+                # Check if a button was clicked
+                if edited_df is not None and not edited_df.equals(df):
+                    # Find which row was clicked
+                    for idx, row in edited_df.iterrows():
+                        if row["Details"] != "View Details":  # Button was clicked
+                            st.session_state.selected_author = df.iloc[idx]["Author ID"]
+                            break
+
+                # Display details if an author is selected
+                if st.session_state.selected_author:
+                    display_author_details(st.session_state.selected_author)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
