@@ -120,19 +120,14 @@ if author_name:
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
-                        "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": author_key  # We'll use this to trigger the details view
+                        "Number of Works": author.get("work_count", "N/A")
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
 
-                # Create session state for clicked author if it doesn't exist
-                if 'clicked_author' not in st.session_state:
-                    st.session_state.clicked_author = None
-
-                # Display the table
-                edited_df = st.data_editor(
+                # Display the table with selectable rows
+                selected_indices = st.data_editor(
                     df,
                     hide_index=True,
                     column_config={
@@ -151,21 +146,16 @@ if author_name:
                         "Number of Works": st.column_config.NumberColumn(
                             "Number of Works",
                             width="small"
-                        ),
-                        "View Details": st.column_config.LinkColumn(
-                            "View Details",
-                            width="small",
-                            help="Click to view author details"
                         )
-                    }
+                    },
+                    key="author_table",
+                    on_change=lambda: None
                 )
 
-                # Check if a link was clicked
-                if edited_df is not None and not edited_df.equals(df):
-                    # Find the changed row
-                    changed_row = edited_df[~edited_df.equals(df)].index[0]
-                    author_id = df.iloc[changed_row]["View Details"]
-                    display_author_details(author_id)
+                # Show details for selected row
+                if selected_indices is not None and len(selected_indices) > 0:
+                    selected_row = df.iloc[selected_indices.index[0]]
+                    display_author_details(selected_row["Author ID"])
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
