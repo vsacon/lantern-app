@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
+# Custom CSS for table styling
 st.markdown("""
     <style>
     .stTitle {
@@ -60,40 +60,28 @@ if author_name:
                 for author in data["docs"]:
                     author_key = author["key"].split("/")[-1]
                     
+                    # Create a clickable link button
+                    view_details_link = f"[🔍 View Details](?selected_author={author_key})"
+                    
                     table_data.append({
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": f"View Details"
+                        "View Details": view_details_link
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Display the table using st.data_editor
-                selected_author = st.data_editor(
-                    df,
-                    column_config={
-                        "Author ID": st.column_config.TextColumn("Author ID", width="small"),
-                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
-                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
-                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small"),
-                        "View Details": st.column_config.ButtonColumn("View Details")
-                    },
-                    hide_index=True,
-                    use_container_width=True,
-                    key="author_table"
-                )
+                # Display the table with clickable buttons inside it
+                st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
                 
-                # Check if an author was selected
-                if selected_author:
-                    selected_author_id = selected_author["Author ID"].values[0]
-                    st.session_state["selected_author"] = selected_author_id
-                
+                # Detect selected author from URL query parameters
+                selected_author_id = st.query_params.get("selected_author", [None])[0]
+
                 # Retrieve details if an author was selected
-                if "selected_author" in st.session_state:
-                    selected_author_id = st.session_state["selected_author"]
+                if selected_author_id:
                     author_details = get_author_details(selected_author_id)
                     if author_details:
                         st.subheader(f"Details for {author_details.get('name', 'Unknown Author')}")
