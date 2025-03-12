@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import json
 import pandas as pd
 
 # Set page config
@@ -18,70 +17,8 @@ st.markdown("""
         font-size: 3rem !important;
         padding-bottom: 2rem;
     }
-    .author-card {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-    }
     </style>
 """, unsafe_allow_html=True)
-
-def display_author_details(author_id):
-    """Fetch and display author details in a formatted way"""
-    try:
-        # Fetch author details
-        response = requests.get(f"https://openlibrary.org/authors/{author_id}.json")
-        response.raise_for_status()
-        author_data = response.json()
-        
-        # Create an expander for the author details
-        with st.expander(f"Details for {author_data.get('name', 'Unknown Author')}"):
-            # Create columns for layout
-            col1, col2 = st.columns([2, 1])
-            
-            with col1:
-                # Basic Information
-                st.subheader("Basic Information")
-                if 'birth_date' in author_data:
-                    st.write(f"🎂 **Birth Date:** {author_data['birth_date']}")
-                if 'death_date' in author_data:
-                    st.write(f"✝️ **Death Date:** {author_data['death_date']}")
-                if 'fuller_name' in author_data:
-                    st.write(f"📝 **Full Name:** {author_data['fuller_name']}")
-                
-                # Biography
-                if 'bio' in author_data:
-                    st.subheader("Biography")
-                    bio_text = author_data['bio']
-                    if isinstance(bio_text, dict) and 'value' in bio_text:
-                        bio_text = bio_text['value']
-                    st.write(bio_text)
-            
-            with col2:
-                # Alternative Names
-                if 'alternate_names' in author_data and author_data['alternate_names']:
-                    st.subheader("Alternative Names")
-                    for name in author_data['alternate_names']:
-                        st.write(f"• {name}")
-                
-                # External Links
-                if 'links' in author_data and author_data['links']:
-                    st.subheader("External Links")
-                    for link in author_data['links']:
-                        if 'url' in link and 'title' in link:
-                            st.markdown(f"• [{link['title']}]({link['url']})")
-                
-                # Wikipedia Link
-                if 'wikipedia' in author_data:
-                    st.subheader("Wikipedia")
-                    st.markdown(f"• [View on Wikipedia]({author_data['wikipedia']})")
-                
-                # Open Library Link
-                st.markdown(f"• [View on Open Library](https://openlibrary.org/authors/{author_id})")
-                
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching author details: {str(e)}")
 
 # App header
 st.title("📚 Author Search")
@@ -90,6 +27,14 @@ st.markdown("""
         Search for authors in the Open Library database
     </p>
 """, unsafe_allow_html=True)
+
+# Function to fetch author details
+def get_author_details(author_id):
+    url = f"https://openlibrary.org/authors/{author_id}.json"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
 
 # Create a text input for author search
 author_name = st.text_input("Enter author name:", placeholder="e.g., J.K. Rowling, Stephen King")
@@ -121,43 +66,40 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "Details": st.button("📖 View", key=f"btn_{author_key}", help=f"View details for {author['name']}")
+                        "View Details": f"View {author_key}"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
 
                 # Display the table
-                st.dataframe(
+                selected_author = st.data_editor(
                     df,
                     hide_index=True,
                     column_config={
-                        "Author ID": st.column_config.TextColumn(
-                            "Author ID",
-                            width="small"
-                        ),
-                        "Author Name": st.column_config.TextColumn(
-                            "Author Name",
-                            width="medium"
-                        ),
-                        "Most Popular Work": st.column_config.TextColumn(
-                            "Most Popular Work",
-                            width="medium"
-                        ),
-                        "Number of Works": st.column_config.NumberColumn(
-                            "Number of Works",
-                            width="small"
-                        )
-                    }
+                        "Author ID": st.column_config.TextColumn("Author ID", width="small"),
+                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
+                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
+                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small"),
+                        "View Details": st.column_config.TextColumn("View Details", width="small")
+                    },
+                    use_container_width=True,
+                    key="author_table"
                 )
-
-                # Add buttons below each row
-                st.write("Click to view author details:")
-                for idx, row in df.iterrows():
-                    col1, col2, col3 = st.columns([1, 2, 1])
-                    with col2:
-                        if st.button(f"📖 {row['Author Name']}", key=f"btn_{row['Author ID']}"):
-                            display_author_details(row["Author ID"])
+                
+                # Show details when an author is selected
+                selected_author_id = st.selectbox("Select an Author to View Details", [""] + list(df["Author ID"]))
+                if selected_author_id:
+                    author_details = get_author_details(selected_author_id)
+                    if author_details:
+                        st.subheader(f"Details for {author_details.get('name', 'Unknown Author')}")
+                        st.markdown(f"**Birth Date:** {author_details.get('birth_date', 'N/A')}")
+                        st.markdown(f"**Death Date:** {author_details.get('death_date', 'N/A')}")
+                        st.markdown(f"**Top Work:** {author_details.get('top_work', 'N/A')}")
+                        st.markdown(f"**Work Count:** {author_details.get('work_count', 'N/A')}")
+                        st.markdown(f"**Bio:** {author_details.get('bio', 'N/A')}")
+                    else:
+                        st.warning("Could not retrieve author details.")
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
