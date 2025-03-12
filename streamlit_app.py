@@ -64,14 +64,17 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": f"[View Details](?selected_author={author_key})"
+                        "View Details": f"[View Details](/?selected_author={author_key})"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Display the table using st.markdown to allow clickable links
-                st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
+                # Convert the View Details column to clickable markdown links
+                df['View Details'] = df.apply(lambda x: f"[View Details](/?selected_author={x['Author ID']})", axis=1)
+                
+                # Display the table using Streamlit's native display
+                st.write(df.to_markdown(index=False), unsafe_allow_html=True)
                 
                 # Retrieve details if an author was selected
                 query_params = st.query_params
