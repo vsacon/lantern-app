@@ -27,6 +27,62 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+def display_author_details(author_id):
+    """Fetch and display author details in a formatted way"""
+    try:
+        # Fetch author details
+        response = requests.get(f"https://openlibrary.org/authors/{author_id}.json")
+        response.raise_for_status()
+        author_data = response.json()
+        
+        # Create an expander for the author details
+        with st.expander(f"Details for {author_data.get('name', 'Unknown Author')}"):
+            # Create columns for layout
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                # Basic Information
+                st.subheader("Basic Information")
+                if 'birth_date' in author_data:
+                    st.write(f"🎂 **Birth Date:** {author_data['birth_date']}")
+                if 'death_date' in author_data:
+                    st.write(f"✝️ **Death Date:** {author_data['death_date']}")
+                if 'fuller_name' in author_data:
+                    st.write(f"📝 **Full Name:** {author_data['fuller_name']}")
+                
+                # Biography
+                if 'bio' in author_data:
+                    st.subheader("Biography")
+                    bio_text = author_data['bio']
+                    if isinstance(bio_text, dict) and 'value' in bio_text:
+                        bio_text = bio_text['value']
+                    st.write(bio_text)
+            
+            with col2:
+                # Alternative Names
+                if 'alternate_names' in author_data and author_data['alternate_names']:
+                    st.subheader("Alternative Names")
+                    for name in author_data['alternate_names']:
+                        st.write(f"• {name}")
+                
+                # External Links
+                if 'links' in author_data and author_data['links']:
+                    st.subheader("External Links")
+                    for link in author_data['links']:
+                        if 'url' in link and 'title' in link:
+                            st.markdown(f"• [{link['title']}]({link['url']})")
+                
+                # Wikipedia Link
+                if 'wikipedia' in author_data:
+                    st.subheader("Wikipedia")
+                    st.markdown(f"• [View on Wikipedia]({author_data['wikipedia']})")
+                
+                # Open Library Link
+                st.markdown(f"• [View on Open Library](https://openlibrary.org/authors/{author_id})")
+                
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching author details: {str(e)}")
+
 # App header
 st.title("📚 Author Search")
 st.markdown("""
@@ -65,14 +121,18 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Author Details": f"https://openlibrary.org/authors/{author_key}"
+                        "View Details": author_key  # We'll use this to trigger the details view
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
 
+                # Create session state for clicked author if it doesn't exist
+                if 'clicked_author' not in st.session_state:
+                    st.session_state.clicked_author = None
+
                 # Display the table
-                st.dataframe(
+                edited_df = st.data_editor(
                     df,
                     hide_index=True,
                     column_config={
@@ -92,13 +152,20 @@ if author_name:
                             "Number of Works",
                             width="small"
                         ),
-                        "View Author Details": st.column_config.LinkColumn(
-                            "View Author Details",
+                        "View Details": st.column_config.LinkColumn(
+                            "View Details",
                             width="small",
-                            help="Click to view author details on Open Library"
+                            help="Click to view author details"
                         )
                     }
                 )
+
+                # Check if a link was clicked
+                if edited_df is not None and not edited_df.equals(df):
+                    # Find the changed row
+                    changed_row = edited_df[~edited_df.equals(df)].index[0]
+                    author_id = df.iloc[changed_row]["View Details"]
+                    display_author_details(author_id)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
