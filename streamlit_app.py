@@ -65,25 +65,21 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": f"Click to View {author_key}"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Display the table with clickable links
-                def make_clickable(author_id):
-                    return f'<a href="?selected_author={author_id}" target="_self">🔍 View Details</a>'
+                # Display the table with buttons
+                selected_author_id = None
+                for index, row in df.iterrows():
+                    if st.button(f"View Details - {row['Author ID']}", key=f"view_{row['Author ID']}"):
+                        selected_author_id = row["Author ID"]
+                        st.session_state["selected_author"] = selected_author_id
                 
-                df["View Details"] = df["Author ID"].apply(make_clickable)
-                
-                st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
-                
-                # Retrieve details based on query parameter
-                query_params = st.experimental_get_query_params()
-                selected_author_id = query_params.get("selected_author", [None])[0]
-                
-                if selected_author_id:
+                # Retrieve details if an author was selected
+                if "selected_author" in st.session_state:
+                    selected_author_id = st.session_state["selected_author"]
                     author_details = get_author_details(selected_author_id)
                     if author_details:
                         st.subheader(f"Details for {author_details.get('name', 'Unknown Author')}")
