@@ -57,7 +57,7 @@ if author_name:
                 table_data = []
                 
                 # Collect data for each author
-                for author in data["docs"]:
+                for index, author in enumerate(data["docs"]):
                     author_key = author["key"].split("/")[-1]
                     
                     table_data.append({
@@ -65,23 +65,33 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
+                        "View Details": f"view_{index}"  # Using index to ensure uniqueness
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Add a 'View Details' button inside the table
-                def add_buttons(df):
-                    buttons = []
-                    for author_id in df["Author ID"]:
-                        if st.button(f"View Details {author_id}", key=f"btn_{author_id}"):
-                            st.session_state["selected_author"] = author_id
-                    return buttons
+                # Display the table using st.data_editor with action buttons
+                edited_df = st.data_editor(
+                    df,
+                    column_config={
+                        "Author ID": st.column_config.TextColumn("Author ID", width="small"),
+                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
+                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
+                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small"),
+                        "View Details": st.column_config.TextColumn("Click Below")
+                    },
+                    hide_index=True,
+                    use_container_width=True,
+                    key="author_table"
+                )
                 
-                df["View Details"] = df["Author ID"].apply(lambda x: add_buttons(df))
-                
-                # Display the table
-                st.dataframe(df, hide_index=True, use_container_width=True)
+                # Ensure unique keys for buttons
+                selected_author_id = None
+                for index, row in df.iterrows():
+                    if st.button("View Details", key=f"view_btn_{index}"):
+                        selected_author_id = row["Author ID"]
+                        st.session_state["selected_author"] = selected_author_id
                 
                 # Retrieve details if an author was selected
                 if "selected_author" in st.session_state:
