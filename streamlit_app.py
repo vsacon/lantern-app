@@ -114,14 +114,15 @@ if author_name:
                     st.session_state.clicked_author = None
                 
                 # Display the table with clickable Author IDs
-                selected_rows = st.data_editor(
+                edited_df = st.data_editor(
                     df,
                     hide_index=True,
                     column_config={
                         "Author ID": st.column_config.LinkColumn(
                             "Author ID",
                             width="small",
-                            help="Click to view details"
+                            help="Click to view details",
+                            display_text="View Details"
                         ),
                         "Author Name": st.column_config.TextColumn(
                             "Author Name",
@@ -135,12 +136,19 @@ if author_name:
                             "Number of Works",
                             width="small"
                         )
-                    }
+                    },
+                    on_change=lambda: None,  # Prevent auto-selection behavior
+                    disabled=True  # Make the table read-only
                 )
+
+                # Get the clicked cell value
+                clicked_cell = st.data_editor_value("clicked_cell")
                 
-                # If a row is selected, show the author details
-                if selected_rows is not None and len(selected_rows) > 0:
-                    selected_author_key = selected_rows.iloc[0]["Author ID"]
+                # Only show author details if an Author ID cell was clicked
+                if (clicked_cell is not None and 
+                    clicked_cell.get("column") == "Author ID" and 
+                    clicked_cell.get("row_index") is not None):
+                    selected_author_key = df.iloc[clicked_cell["row_index"]]["Author ID"]
                     show_author_details(selected_author_key)
                 
                 st.caption(f"Found {data['numFound']} author(s)")
