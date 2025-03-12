@@ -121,58 +121,45 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "Details": f"#view_{author_key}"  # Using hash to prevent page navigation
+                        "View Details": False  # Checkbox column
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
 
-                # Initialize session state for storing the selected author
-                if 'selected_author' not in st.session_state:
-                    st.session_state.selected_author = None
-
-                # Display the table
-                edited_df = st.data_editor(
-                    df,
-                    hide_index=True,
-                    column_config={
-                        "Author ID": st.column_config.TextColumn(
-                            "Author ID",
-                            width="small"
-                        ),
-                        "Author Name": st.column_config.TextColumn(
-                            "Author Name",
-                            width="medium"
-                        ),
-                        "Most Popular Work": st.column_config.TextColumn(
-                            "Most Popular Work",
-                            width="medium"
-                        ),
-                        "Number of Works": st.column_config.NumberColumn(
-                            "Number of Works",
-                            width="small"
-                        ),
-                        "Details": st.column_config.LinkColumn(
-                            "Details",
-                            help="Click to view author details",
-                            width="small",
-                            display_text="View Details"
-                        )
-                    }
-                )
-
-                # Check if a link was clicked
-                if edited_df is not None and not edited_df.equals(df):
-                    # Find which row was clicked
-                    for idx, row in edited_df.iterrows():
-                        if row["Details"] != df.iloc[idx]["Details"]:  # Link was clicked
-                            author_id = df.iloc[idx]["Author ID"]
-                            st.session_state.selected_author = author_id
-                            break
-
-                # Display details if an author is selected
-                if st.session_state.selected_author:
-                    display_author_details(st.session_state.selected_author)
+                # Create columns to display table and buttons side by side
+                col1, col2 = st.columns([4, 1])
+                
+                with col1:
+                    # Display the table
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        column_config={
+                            "Author ID": st.column_config.TextColumn(
+                                "Author ID",
+                                width="small"
+                            ),
+                            "Author Name": st.column_config.TextColumn(
+                                "Author Name",
+                                width="medium"
+                            ),
+                            "Most Popular Work": st.column_config.TextColumn(
+                                "Most Popular Work",
+                                width="medium"
+                            ),
+                            "Number of Works": st.column_config.NumberColumn(
+                                "Number of Works",
+                                width="small"
+                            )
+                        }
+                    )
+                
+                with col2:
+                    st.write("Actions")
+                    for idx, row in df.iterrows():
+                        if st.button("📖", key=f"btn_{row['Author ID']}", help=f"View details for {row['Author Name']}"):
+                            display_author_details(row['Author ID'])
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
