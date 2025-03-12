@@ -57,45 +57,27 @@ if author_name:
                 table_data = []
                 
                 # Collect data for each author
-                for index, author in enumerate(data["docs"]):
+                for author in data["docs"]:
                     author_key = author["key"].split("/")[-1]
-                    
                     table_data.append({
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": f"view_{index}"  # Using index to ensure uniqueness
+                        "View Details": f"[View Details](?selected_author={author_key})"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Display the table using st.data_editor with action buttons
-                edited_df = st.data_editor(
-                    df,
-                    column_config={
-                        "Author ID": st.column_config.TextColumn("Author ID", width="small"),
-                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
-                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
-                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small"),
-                        "View Details": st.column_config.TextColumn("Click Below")
-                    },
-                    hide_index=True,
-                    use_container_width=True,
-                    key="author_table"
-                )
-                
-                # Ensure unique keys for buttons
-                selected_author_id = None
-                for index, row in df.iterrows():
-                    if st.button("View Details", key=f"view_btn_{index}"):
-                        selected_author_id = row["Author ID"]
-                        st.session_state["selected_author"] = selected_author_id
+                # Display the table using st.markdown to allow clickable links
+                st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
                 
                 # Retrieve details if an author was selected
-                if "selected_author" in st.session_state:
-                    selected_author_id = st.session_state["selected_author"]
+                query_params = st.query_params
+                selected_author_id = query_params.get("selected_author", [None])[0]
+                
+                if selected_author_id:
                     author_details = get_author_details(selected_author_id)
                     if author_details:
                         st.subheader(f"Details for {author_details.get('name', 'Unknown Author')}")
