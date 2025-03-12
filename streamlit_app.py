@@ -120,21 +120,17 @@ if author_name:
                         "Author ID": author_key,
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
-                        "Number of Works": author.get("work_count", "N/A")
+                        "Number of Works": author.get("work_count", "N/A"),
+                        "Details": st.button("📖 View", key=f"btn_{author_key}", help=f"View details for {author['name']}")
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
 
-                # Initialize session state for selected author
-                if 'selected_author' not in st.session_state:
-                    st.session_state.selected_author = None
-
-                # Display the table with selection
-                selection = st.data_editor(
+                # Display the table
+                st.dataframe(
                     df,
                     hide_index=True,
-                    disabled=df.columns.tolist(),  # Make all columns read-only
                     column_config={
                         "Author ID": st.column_config.TextColumn(
                             "Author ID",
@@ -155,14 +151,13 @@ if author_name:
                     }
                 )
 
-                # Handle row selection
-                if selection is not None:
-                    selected_indices = selection.index
-                    if len(selected_indices) > 0:
-                        selected_author = df.iloc[selected_indices[0]]["Author ID"]
-                        if selected_author != st.session_state.selected_author:
-                            st.session_state.selected_author = selected_author
-                            display_author_details(selected_author)
+                # Add buttons below each row
+                st.write("Click to view author details:")
+                for idx, row in df.iterrows():
+                    col1, col2, col3 = st.columns([1, 2, 1])
+                    with col2:
+                        if st.button(f"📖 {row['Author Name']}", key=f"btn_{row['Author ID']}"):
+                            display_author_details(row["Author ID"])
                 
                 st.caption(f"Found {data['numFound']} author(s)")
             
