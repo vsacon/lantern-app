@@ -65,30 +65,21 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "View Details": f"View Details"
+                        "View Details": f"View {author_key}"
                     })
                 
                 # Create a DataFrame
                 df = pd.DataFrame(table_data)
                 
-                # Display the table using st.data_editor
-                selected_author = st.data_editor(
-                    df,
-                    column_config={
-                        "Author ID": st.column_config.TextColumn("Author ID", width="small"),
-                        "Author Name": st.column_config.TextColumn("Author Name", width="medium"),
-                        "Most Popular Work": st.column_config.TextColumn("Most Popular Work", width="medium"),
-                        "Number of Works": st.column_config.NumberColumn("Number of Works", width="small")
-                    },
-                    hide_index=True,
-                    use_container_width=True,
-                    key="author_table"
-                )
+                # Display the table using st.dataframe
+                st.dataframe(df, hide_index=True, use_container_width=True)
                 
-                # Check if an author was selected
-                if selected_author:
-                    selected_author_id = selected_author["Author ID"].values[0]
-                    st.session_state["selected_author"] = selected_author_id
+                # Ensure unique keys for buttons
+                selected_author_id = None
+                for _, row in df.iterrows():
+                    if st.button(f"View Details - {row['Author ID']}", key=f"view_{row['Author ID']}"):
+                        selected_author_id = row["Author ID"]
+                        st.session_state["selected_author"] = selected_author_id
                 
                 # Retrieve details if an author was selected
                 if "selected_author" in st.session_state:
