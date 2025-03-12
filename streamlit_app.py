@@ -121,7 +121,7 @@ if author_name:
                         "Author Name": author["name"],
                         "Most Popular Work": author.get("top_work", "N/A"),
                         "Number of Works": author.get("work_count", "N/A"),
-                        "Details": "View Details"  # Text for the button
+                        "Details": f"#view_{author_key}"  # Using hash to prevent page navigation
                     })
                 
                 # Create a DataFrame
@@ -155,17 +155,19 @@ if author_name:
                         "Details": st.column_config.LinkColumn(
                             "Details",
                             help="Click to view author details",
-                            width="small"
+                            width="small",
+                            display_text="View Details"
                         )
                     }
                 )
 
-                # Check if a button was clicked
+                # Check if a link was clicked
                 if edited_df is not None and not edited_df.equals(df):
                     # Find which row was clicked
                     for idx, row in edited_df.iterrows():
-                        if row["Details"] != "View Details":  # Button was clicked
-                            st.session_state.selected_author = df.iloc[idx]["Author ID"]
+                        if row["Details"] != df.iloc[idx]["Details"]:  # Link was clicked
+                            author_id = df.iloc[idx]["Author ID"]
+                            st.session_state.selected_author = author_id
                             break
 
                 # Display details if an author is selected
